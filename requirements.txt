@@ -6,3 +6,4 @@ pyloudnorm
 mutagen
 requests
 jinja2
+python-multipart
