@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Music QC System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      text-align: center;
+      font-family: sans-serif;
+      padding: 50px;
+    }
+    input, button {
+      padding: 10px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎧 Music Quality Control Report</h1>
+  <form action="/upload/audio/" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".wav,.flac,.mp3" required>
+    <br>
+    <button type="submit">Upload & QC Check</button>
+  </form>
+</body>
+</html>
