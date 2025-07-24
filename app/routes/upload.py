@@ -1,38 +1,31 @@
 # app/routes/upload_audio.py
 
-from fastapi import APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
-from app.core import qc_engine
-import shutil
+from fastapi import APIRouter, File, UploadFile, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from app.core import qc_engine  # QC logic
 import os
-import uuid
+import shutil
 
 router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@router.post("/upload/audio/")
-async def upload_audio(file: UploadFile = File(...)):
-    if file.content_type not in ["audio/wav", "audio/x-wav", "audio/flac"]:
-        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a WAV or FLAC file.")
-
-    # Generate unique filename and save
-    file_ext = file.filename.split(".")[-1]
-    filename = f"{uuid.uuid4()}.{file_ext}"
-    temp_path = os.path.join("app", "temp", filename)
-
-    os.makedirs(os.path.dirname(temp_path), exist_ok=True)
-    with open(temp_path, "wb") as buffer:
+@router.post("/upload/")
+async def upload_audio(request: Request, file: UploadFile = File(...)):
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
+    
+    with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    try:
-        # Run QC Analysis
-        qc_result = qc_engine.analyze_audio(temp_path)
+    # Run QC check using qc_engine.py
+    qc_result, waveform_image = qc_engine.run_qc(file_path)
 
-        # Delete temp file after analysis
-        os.remove(temp_path)
-
-        return JSONResponse(content={"qc_report": qc_result})
-    except Exception as e:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "result": qc_result,
+        "waveform_plot": waveform_image,
+        "show_result": True
+    })
