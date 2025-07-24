@@ -4,7 +4,7 @@ from app.routes import upload
 
 app = FastAPI()
 
-# ✅ Add health check endpoint for Render
+# ✅ Render health check route
 @app.get("/healthz")
 def health_check():
     return {"status": "ok"}
