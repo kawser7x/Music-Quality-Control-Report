@@ -2,15 +2,13 @@
 
 from fastapi import FastAPI
 from app.routes import upload
-from app.routes import health  # health route আলাদা রাখা ভালো
 
 app = FastAPI()
 
-# Health check route (for Render)
+# Health check endpoint for Render.com
 @app.get("/healthz")
 def health_check():
     return {"status": "ok"}
 
-# Include routers
+# Include the upload route (for showing the homepage)
 app.include_router(upload.router)
-app.include_router(health.router)
