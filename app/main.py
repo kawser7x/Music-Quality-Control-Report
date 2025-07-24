@@ -2,10 +2,15 @@
 
 from fastapi import FastAPI
 from app.routes import upload
-from app.routes import health  # নতুন যুক্ত করো
+from app.routes import health  # health route আলাদা রাখা ভালো
 
 app = FastAPI()
 
-# Include both upload and health routers
+# Health check route (for Render)
+@app.get("/healthz")
+def health_check():
+    return {"status": "ok"}
+
+# Include routers
 app.include_router(upload.router)
-app.include_router(health.router)  # নতুন যুক্ত করো
+app.include_router(health.router)
