@@ -2,17 +2,19 @@
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from app.routes import upload_audio
+from app.routes import upload_audio, pdf_generator, copyright_checker
 
 app = FastAPI()
 
-# Serve static files (CSS, JS)
+# Static files and templates
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Health check route
+# Include routers
+app.include_router(upload_audio.router)
+app.include_router(pdf_generator.router)
+app.include_router(copyright_checker.router)
+
+# Health check endpoint for Render deployment
 @app.get("/healthz")
 def health_check():
     return {"status": "ok"}
-
-# Upload and UI route
-app.include_router(upload_audio.router)
