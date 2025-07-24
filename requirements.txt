@@ -7,3 +7,7 @@ mutagen
 requests
 jinja2
 python-multipart
+fpdf==1.7.2
+matplotlib
+numpy
+scipy
