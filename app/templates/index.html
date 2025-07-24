@@ -1,29 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <title>Music QC System</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      background: #111;
-      color: #fff;
-      text-align: center;
-      font-family: sans-serif;
-      padding: 50px;
-    }
-    input, button {
-      padding: 10px;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrackVerify - Music QC</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
-  <h1>🎧 Music Quality Control Report</h1>
-  <form action="/upload/audio/" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".wav,.flac,.mp3" required>
-    <br>
-    <button type="submit">Upload & QC Check</button>
-  </form>
+    <div class="container">
+        <header>
+            <h1>🎧 TrackVerify</h1>
+            <p class="subtitle">Professional Music Quality Control Report<br><span class="bn">প্রফেশনাল মিউজিক কোয়ালিটি কন্ট্রোল রিপোর্ট</span></p>
+        </header><section class="upload-section">
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label for="audioFile">Upload WAV or FLAC file:</label>
+            <input type="file" id="audioFile" name="file" accept=".wav,.flac" required>
+            <button type="submit">Run QC Check</button>
+        </form>
+        <p id="loading" class="hidden">Analyzing... Please wait.</p>
+    </section>
+
+    <section class="result-section hidden" id="resultSection">
+        <h2>✅ QC Result (Bangla + English)</h2>
+        <div id="resultText"></div>
+        <div class="actions">
+            <button id="copyButton">📋 Copy Report</button>
+            <button id="downloadPdf">📄 Download PDF</button>
+        </div>
+        <div id="waveformPlotContainer"></div>
+    </section>
+
+    <footer>
+        <div class="contact">
+            <p>📬 Contact:</p>
+            <a href="mailto:godzulfi@gmail.com">Email</a>
+            <a href="https://t.me/kawser7x" target="_blank">Telegram</a>
+            <a href="https://twitter.com/kawser7x" target="_blank">Twitter</a>
+        </div>
+        <p class="version">TrackVerify QC Engine - OFFSTEP v2.2 Standard</p>
+    </footer>
+</div>
+
+<script src="/static/js/script.js"></script>
+
 </body>
 </html>
