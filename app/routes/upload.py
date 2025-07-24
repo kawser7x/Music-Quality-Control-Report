@@ -1,6 +1,6 @@
 # app/routes/upload.py
 
-from fastapi import APIRouter, Request, UploadFile, File
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
