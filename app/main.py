@@ -1,14 +1,18 @@
 # app/main.py
 
 from fastapi import FastAPI
-from app.routes import upload
+from fastapi.staticfiles import StaticFiles
+from app.routes import upload_audio
 
 app = FastAPI()
 
-# Health check endpoint for Render.com
+# Serve static files (CSS, JS)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Health check route
 @app.get("/healthz")
 def health_check():
     return {"status": "ok"}
 
-# Include the upload route (for showing the homepage)
-app.include_router(upload.router)
+# Upload and UI route
+app.include_router(upload_audio.router)
