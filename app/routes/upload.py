@@ -1,31 +1,35 @@
 # app/routes/upload_audio.py
 
-from fastapi import APIRouter, File, UploadFile, Request
+from fastapi import APIRouter, UploadFile, File, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from app.core import qc_engine  # QC logic
+from app.core.qc_engine import analyze_audio
+from app.core.copyright_checker import run_copyright_checks
 import os
 import shutil
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-@router.post("/upload/")
+@router.post("/upload-audio/", response_class=HTMLResponse)
 async def upload_audio(request: Request, file: UploadFile = File(...)):
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    
-    with open(file_path, "wb") as buffer:
+    temp_path = f"temp/{file.filename}"
+    os.makedirs("temp", exist_ok=True)
+
+    with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Run QC check using qc_engine.py
-    qc_result, waveform_image = qc_engine.run_qc(file_path)
+    # Run QC Analysis
+    qc_report, waveform_plot_path = analyze_audio(temp_path)
 
-    return templates.TemplateResponse("index.html", {
+    # Run Copyright Checks
+    copyright_result = run_copyright_checks(temp_path)
+
+    os.remove(temp_path)
+
+    return templates.TemplateResponse("result.html", {
         "request": request,
-        "result": qc_result,
-        "waveform_plot": waveform_image,
-        "show_result": True
+        "qc_report": qc_report,
+        "waveform_plot_path": f"/{waveform_plot_path}",
+        "copyright_data": copyright_result
     })
