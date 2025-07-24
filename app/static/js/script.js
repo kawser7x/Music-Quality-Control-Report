@@ -2,55 +2,65 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
     e.preventDefault();
 
     const fileInput = document.getElementById("audioFile");
+    const file = fileInput.files[0];
+    if (!file) return alert("Please select a file.");
+
     const formData = new FormData();
-    formData.append("file", fileInput.files[0]);
+    formData.append("file", file);
 
-    const loading = document.getElementById("loading");
-    const resultSection = document.getElementById("resultSection");
-    const resultText = document.getElementById("resultText");
-
-    loading.classList.remove("hidden");
+    document.getElementById("loading").classList.remove("hidden");
 
     try {
-        const response = await axios.post("/upload/audio/", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data"
-            }
+        const response = await fetch("/upload-audio", {
+            method: "POST",
+            body: formData
         });
 
-        loading.classList.add("hidden");
+        const data = await response.json();
+        document.getElementById("loading").classList.add("hidden");
+
+        const resultSection = document.getElementById("resultSection");
+        const resultText = document.getElementById("resultText");
+
+        resultText.innerText = data.result;
         resultSection.classList.remove("hidden");
-
-        resultText.innerText = response.data.result || "✅ QC Passed. But no result returned.";
-
-    } catch (error) {
-        loading.classList.add("hidden");
-        alert("QC failed: " + (error.response?.data?.detail || error.message));
+    } catch (err) {
+        document.getElementById("loading").classList.add("hidden");
+        alert("❌ Error occurred while uploading the file.");
+        console.error(err);
     }
 });
 
-// 📋 Copy to Clipboard
-document.getElementById("copyButton").addEventListener("click", function () {
-    const resultText = document.getElementById("resultText").innerText;
-    navigator.clipboard.writeText(resultText)
-        .then(() => alert("✅ QC report copied to clipboard!"))
-        .catch(() => alert("❌ Failed to copy QC report."));
+// 📋 Copy Report Button
+document.getElementById("copyButton").addEventListener("click", () => {
+    const result = document.getElementById("resultText").innerText;
+    navigator.clipboard.writeText(result).then(() => {
+        alert("✅ Report copied to clipboard.");
+    });
 });
 
-// 📄 Download as PDF
-document.getElementById("downloadPdf").addEventListener("click", function () {
-    const { jsPDF } = window.jspdf || {};
-    if (!jsPDF) {
-        alert("PDF library not loaded.");
-        return;
+// 📄 Download PDF Button
+document.getElementById("downloadPdf").addEventListener("click", async () => {
+    const result = document.getElementById("resultText").innerText;
+
+    const response = await fetch("/generate-pdf", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ content: result })
+    });
+
+    if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "TrackVerify_QC_Report.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        alert("❌ Failed to generate PDF.");
     }
-
-    const doc = new jsPDF();
-    const text = document.getElementById("resultText").innerText;
-    const lines = doc.splitTextToSize(text, 180);
-
-    doc.setFontSize(12);
-    doc.text("🎧 TrackVerify - Music QC Report", 10, 10);
-    doc.text(lines, 10, 20);
-    doc.save("trackverify_qc_report.pdf");
 });
