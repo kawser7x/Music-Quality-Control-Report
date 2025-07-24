@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+ffmpeg-python
+pydub
+pyloudnorm
+mutagen
+requests
+jinja2
