@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrackVerify - QC Report</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎧 TrackVerify</h1>
+            <p class="subtitle">Music QC & Copyright Report<br><span class="bn">QC ও কপিরাইট রিপোর্ট</span></p>
+        </header>
+
+        <section class="result-section">
+            <h2>✅ QC Result</h2>
+            <div class="result-box">
+                <pre>{{ qc_report }}</pre>
+            </div>
+            <div id="waveformPlotContainer">
+                {% if waveform_plot %}
+                    <img src="{{ waveform_plot }}" alt="Waveform Plot">
+                {% endif %}
+            </div>
+            <div class="actions">
+                <button id="copyButton">📋 Copy Report</button>
+                <button id="downloadPdf">📄 Download PDF</button>
+            </div>
+        </section>
+
+        <section class="result-section">
+            <h2>📛 Copyright Check Result</h2>
+            <div class="result-box">
+                <h3>🎼 AudD Result</h3>
+                {% if copyright_data.audd %}
+                    <pre>{{ copyright_data.audd | tojson(indent=2) }}</pre>
+                {% else %}
+                    <p>❌ No result from AudD</p>
+                {% endif %}
+
+                <h3>📡 ACRCloud Result</h3>
+                {% if copyright_data.acrcloud %}
+                    <pre>{{ copyright_data.acrcloud | tojson(indent=2) }}</pre>
+                {% else %}
+                    <p>❌ No result from ACRCloud</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <footer>
+            <div class="contact">
+                <p>📬 Contact:</p>
+                <a href="mailto:godzulfi@gmail.com">Email</a>
+                <a href="https://t.me/kawser7x" target="_blank">Telegram</a>
+                <a href="https://twitter.com/kawser7x" target="_blank">Twitter</a>
+            </div>
+            <p class="version">TrackVerify QC Engine - OFFSTEP v2.2</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
