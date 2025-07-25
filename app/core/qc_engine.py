@@ -1,68 +1,59 @@
 import os
-import numpy as np
-import pyloudnorm as pyln
 from pydub import AudioSegment
+import pyloudnorm as pyln
 import matplotlib.pyplot as plt
-from app.utils.waveform_plotter import generate_waveform_plot
+import numpy as np
+from app.utils.waveform_plotter import plot_waveform_with_fade
 
-def analyze_audio(file_path: str) -> dict:
+def analyze_audio_quality(file_path: str) -> dict:
+    # Load audio
     audio = AudioSegment.from_file(file_path)
-    samples = np.array(audio.get_array_of_samples()).astype(np.float32)
-    if audio.channels == 2:
-        samples = samples.reshape((-1, 2))
-        samples = samples.mean(axis=1)
+    samples = np.array(audio.get_array_of_samples())
+    sample_rate = audio.frame_rate
 
-    # Loudness analysis
-    meter = pyln.Meter(audio.frame_rate)
-    loudness = meter.integrated_loudness(samples)
-    true_peak = np.max(samples) / (2 ** 15)
-    duration_sec = len(audio) / 1000.0
+    # Loudness Meter
+    meter = pyln.Meter(sample_rate)
+    loudness = meter.integrated_loudness(samples.astype(np.float32))
 
-    # Fade-out check: between last 8-15 seconds
-    fade_start = max(0, duration_sec - 15)
-    fade_end = max(0, duration_sec - 8)
-    fade_region = audio[fade_start * 1000: fade_end * 1000]
-    fade_samples = np.array(fade_region.get_array_of_samples()).astype(np.float32)
-    fade_db = 20 * np.log10(np.maximum(np.abs(fade_samples), 1e-10))
-    fade_slope = np.polyfit(range(len(fade_db)), fade_db, 1)[0]
+    # True Peak
+    peak_db = 20 * np.log10(np.max(np.abs(samples)) / (2 ** (audio.sample_width * 8 - 1)))
 
-    has_fade_out = fade_slope < 0  # Negative slope means fading out
+    # Duration
+    duration_sec = len(audio) / 1000
 
-    # Waveform plot
-    plot_path = "app/static/waveform/waveform_plot.png"
-    os.makedirs(os.path.dirname(plot_path), exist_ok=True)
-    generate_waveform_plot(file_path, plot_path)
+    # Fade-out detection
+    fade_ok = detect_fade_out(samples, sample_rate, duration_sec)
 
-    # Report (Bangla + English)
-    result_bn = []
-    result_en = []
+    # Plot waveform with fade-out range
+    plot_path = plot_waveform_with_fade(file_path)
 
-    # Loudness check
-    if -15 <= loudness <= -13:
-        result_bn.append(f"🔊 লাউডনেস ঠিক আছে: {loudness:.2f} LUFS")
-        result_en.append(f"🔊 Loudness is within range: {loudness:.2f} LUFS")
-    else:
-        result_bn.append(f"⚠️ লাউডনেস ভুল: {loudness:.2f} LUFS (চাহিদা -14 ±1)")
-        result_en.append(f"⚠️ Loudness out of range: {loudness:.2f} LUFS (Target -14 ±1)")
+    # Generate result
+    summary = "Audio passed all checks ✅" if loudness >= -15 and loudness <= -13 and peak_db <= -1.0 and fade_ok else "Issues detected ❌"
+    summary_bn = "অডিও সমস্ত পরীক্ষায় উত্তীর্ণ হয়েছে ✅" if summary.endswith("✅") else "অডিওতে কিছু সমস্যা আছে ❌"
 
-    # True peak
-    if true_peak <= 1.0:
-        result_bn.append(f"✅ ট্রু পিক ঠিক আছে: {true_peak:.2f} dBFS")
-        result_en.append(f"✅ True peak is okay: {true_peak:.2f} dBFS")
-    else:
-        result_bn.append(f"❌ ট্রু পিক বেশি: {true_peak:.2f} dBFS")
-        result_en.append(f"❌ True peak too high: {true_peak:.2f} dBFS")
-
-    # Fade-out
-    if has_fade_out:
-        result_bn.append("✅ ফেইড-আউট ঠিকমতো আছে (শেষ ৮-১৫ সেকেন্ডের মধ্যে)")
-        result_en.append("✅ Fade-out detected properly (within last 8–15 sec)")
-    else:
-        result_bn.append("❌ ফেইড-আউট পাওয়া যায়নি")
-        result_en.append("❌ No fade-out detected")
-
-    return {
-        "report_bn": "\n".join(result_bn),
-        "report_en": "\n".join(result_en),
-        "waveform_plot": "/static/waveform/waveform_plot.png"
+    result = {
+        "loudness": f"{loudness:.2f} LUFS",
+        "peak": f"{peak_db:.2f} dBFS",
+        "fade_out": "OK ✅" if fade_ok else "Missing or too late ❌",
+        "waveform_plot": plot_path,
+        "summary": summary,
+        "summary_bn": summary_bn
     }
+
+    return result
+
+def detect_fade_out(samples, sr, duration_sec):
+    # Define fade detection zone: 8–15 seconds before end
+    end_sec = duration_sec
+    start_sec = max(end_sec - 15, 0)
+    mid_sec = max(end_sec - 8, 0)
+
+    start_idx = int(start_sec * sr)
+    mid_idx = int(mid_sec * sr)
+
+    start_level = np.mean(np.abs(samples[start_idx:mid_idx]))
+    end_level = np.mean(np.abs(samples[mid_idx:]))
+
+    if end_level < start_level * 0.5:
+        return True
+    return False
