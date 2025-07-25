@@ -1,39 +1,31 @@
-# app/routes/upload_audio.py
-
-from fastapi import APIRouter, UploadFile, Request, File
+from fastapi import APIRouter, UploadFile, File, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from app.core.qc_engine import analyze_audio_quality
-from app.core.copyright_checker import check_copyright
-from app.utils.waveform_plotter import generate_waveform_plot
 import os
-import shutil
+from uuid import uuid4
+from app.core.qc_engine import analyze_audio_quality
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
-@router.post("/upload-audio/", response_class=HTMLResponse)
-async def upload_audio(request: Request, file: UploadFile = File(...)):
-    temp_path = f"temp/{file.filename}"
-    os.makedirs("temp", exist_ok=True)
 
-    with open(temp_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+@router.post("/upload/audio/", response_class=HTMLResponse)
+async def upload_audio(request: Request, audio: UploadFile = File(...)):
+    # Generate secure filename
+    file_ext = os.path.splitext(audio.filename)[-1].lower()
+    filename = f"{uuid4().hex}{file_ext}"
+    file_path = os.path.join("uploads", filename)
 
-    # QC analysis
-    qc_result = analyze_audio_quality(temp_path)
+    # Ensure uploads directory exists
+    os.makedirs("uploads", exist_ok=True)
 
-    # Copyright check
-    copyright_result = check_copyright(temp_path)
+    # Save uploaded file
+    with open(file_path, "wb") as f:
+        f.write(await audio.read())
 
-    # Waveform plot
-    waveform_img_path = generate_waveform_plot(temp_path)
+    # Run QC Analysis
+    qc_result = analyze_audio_quality(file_path)
 
-    # Final result merge
-    final_result = qc_result + "\n\n" + copyright_result
-
-    return templates.TemplateResponse("result.html", {
+    # Pass result to UI template
+    return request.app.state.templates.TemplateResponse("result.html", {
         "request": request,
-        "result": final_result,
-        "waveform_img": waveform_img_path
+        "qc_result": qc_result
     })
